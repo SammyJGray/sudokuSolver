@@ -5,7 +5,11 @@
 #include "../include/sudoku.h"
 
 void clear_screen(){
-	system("clear");
+	#ifdef _WIN32
+		system("cls");
+	#else
+		system("clear");
+	#endif
 }
 
 void print_grid(int* grid){
