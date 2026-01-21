@@ -73,9 +73,9 @@ make run-debug
 - No advanced Sudoku solving techniques are used, like naked pairs
 
 ## Future improvements
--Adding more solving techniques
--Adding Sudoku variants
--Sudoku generator with difficulty scaling
+- Adding more solving techniques
+- Adding Sudoku variants
+- Sudoku generator with difficulty scaling
 
 ## Final thoughts
 This was written as a learning experience to explore a few different things.
