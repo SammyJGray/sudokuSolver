@@ -60,47 +60,66 @@ int reduce_domain(struct SudokuState* sudokuState, int index, int num){
 	return 1;
 }
 
+typedef int (*peer_fn)(struct SudokuState* sudokuState, int peerIndex, int value);
+
+int for_each_peer(struct SudokuState* sudokuState, int index, int value, peer_fn fn){
+	int row = index / SIZE;
+	for (int x = 0; x < SIZE; x++){
+		int peerIndex = row*SIZE + x;
+		if (peerIndex != index && !fn(sudokuState,peerIndex,value)) return 0;
+	}
+
+	int col = index % SIZE;
+	for (int y = 0; y < SIZE; y++){
+		int peerIndex = y*SIZE + col;
+		if (peerIndex != index && !fn(sudokuState,peerIndex,value)) return 0;
+	}
+
+	int box_row = (row / BOX_SIZE) * BOX_SIZE;
+	int box_col = (col / BOX_SIZE) * BOX_SIZE;
+	for (int y = 0; y < BOX_SIZE; y++){
+		for (int x = 0; x < BOX_SIZE; x++){
+			int peerIndex = (y+box_row)*SIZE + (x+box_col);
+			if (peerIndex != index && !fn(sudokuState,peerIndex,value)) return 0;
+		}
+	}
+
+	return 1;
+}
+
+int propagate_peer(struct SudokuState* sudokuState, int peerIndex, int value){
+	if (sudokuState->grid[peerIndex] != 0) return 1;
+	return reduce_domain(sudokuState,peerIndex,value);
+}
 
 int propagate(struct SudokuState* sudokuState, int index){
 	int num = sudokuState->grid[index];
 	if (num == 0) return 1;
 
-	// Row propagation
-	int row = index / SIZE;
-	for (int x = 0; x < SIZE; x++){
-		int nIndex = row*SIZE + x;
+	return for_each_peer(sudokuState,index,num,propagate_peer);	
+}
 
-		if (index == nIndex) continue;
-		if (sudokuState->grid[nIndex] != 0) continue;
-		if (!reduce_domain(sudokuState,nIndex,num)) return 0;
-	}
+// Returns 0 on peer conflict
+int peer_conflict(struct SudokuState* sudokuState,int peerIndex, int value){
+	return (sudokuState->grid[peerIndex] != value);
+}
 
-	// Col propagation
-	int col = index % SIZE;
-	for (int y = 0; y < SIZE; y++){
-		int nIndex = y*SIZE + col;
+// Function assumes constraints will be propagted later
+int assign_cell(struct SudokuState* sudokuState, int index, int num){
 
-		if (index == nIndex) continue;
-		if (sudokuState->grid[nIndex] != 0) continue;
-		if (!reduce_domain(sudokuState,nIndex,num)) return 0;
-	}
+	// Check Domain
+	uint32_t mask = 1 << (num-1);
+	if ((sudokuState->domain[index] & mask) == 0) return 0;
 
-	// Box propagation
-	int box_row = (row / BOX_SIZE) * BOX_SIZE;
-	int box_col = (col / BOX_SIZE) * BOX_SIZE;
-	for (int y = 0; y < BOX_SIZE; y++){
-		for (int x = 0; x < BOX_SIZE; x++){
-			int nIndex = (y+box_row)*SIZE + (x+box_col);
-		
-			if (index == nIndex) continue;
-			if (sudokuState->grid[nIndex] != 0) continue;
-			if (!reduce_domain(sudokuState,nIndex,num)) return 0;
-		}
-	}
-		
+	if (!for_each_peer(sudokuState,index,num,peer_conflict)) return 0;
+
+	sudokuState->grid[index] = num;
+	sudokuState->domain[index] = mask;
 
 	return 1;
 }
+
+
 int most_constrained(struct SudokuState* sudokuState){
 	int best_index = -1;
 	int min_count = SIZE+1;
@@ -121,46 +140,6 @@ int most_constrained(struct SudokuState* sudokuState){
 	return best_index;
 }
 
-// Function assumes constraints will be propagted later
-int assign_cell(struct SudokuState* sudokuState, int index, int num){
-
-	// Check Domain
-	uint32_t mask = 1 << (num-1);
-	if ((sudokuState->domain[index] & mask) == 0) return 0;
-
-	int row = index / SIZE;
-	int col = index % SIZE;
-	
-	// Check row
-	for (int x = 0; x < SIZE; x++){
-		int nIndex = row*SIZE + x;
-		if (nIndex != index && sudokuState->grid[nIndex] == num) return 0;
-	}
-
-	// Check col
-	for (int y = 0; y < SIZE; y++){
-		int nIndex = y*SIZE + col;
-		if (nIndex != index && sudokuState->grid[nIndex] == num) return 0;
-	}
-
-	int box_row = (row / BOX_SIZE) * BOX_SIZE;
-	int box_col = (col / BOX_SIZE) * BOX_SIZE;
-	
-	// Check box
-	for (int x = 0; x < BOX_SIZE; x++){
-		for (int y = 0; y < BOX_SIZE; y++){
-			int nIndex = (y+box_row)*SIZE + (x+box_col);
-			if (nIndex != index && sudokuState->grid[nIndex] == num) return 0;
-		}
-	}
-
-	sudokuState->grid[index] = num;
-	sudokuState->domain[index] = mask;
-
-	return 1;
-}
-
-
 int guess(struct SudokuState* sudokuState){
 	int index = most_constrained(sudokuState);
 
@@ -176,7 +155,6 @@ int guess(struct SudokuState* sudokuState){
 			if (!assign_cell(sudokuState,index,i+1)) continue;
 			
 			if (!propagate(sudokuState,index) || !guess(sudokuState)){
-				sudokuState->grid[index] = 0;
 				memcpy(sudokuState->domain,backupDomain,sizeof(backupDomain));
 				memcpy(sudokuState->grid,backupGrid,sizeof(backupGrid));
 				continue;
