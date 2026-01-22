@@ -3,7 +3,9 @@
 
 #include "./sudoku.h"
 
-int bit_scan(uint32_t mask, int n);
+int bit_scan(uint32_t x);
+
+int bit_count(uint32_t x);
 
 int reduce_domain(struct SudokuState* sudokuState, int index, int num);
 

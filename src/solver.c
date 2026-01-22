@@ -7,11 +7,34 @@ int propagate(struct SudokuState* sudokuState, int index);
 
 int assign_cell(struct SudokuState* sudokuState, int index, int num);
 
-int bit_scan(uint32_t mask, int n){
-	for (int i = 0; i < n; i++){
-		if (mask & (1 << i)) return i;
-	}
-	return -1;
+int bit_scan(uint32_t x){
+
+	if (x == 0) return -1;
+
+	#if defined(__GNUC__) || defined(__clang__)
+		return __builtin_ctz(x);
+	#else
+		int index = 0;
+		while ((x & 1) == 0){
+			x >>= 1;
+			index++;
+		}
+		return index;
+	#endif
+}
+
+int bit_count(uint32_t x){
+
+	#if defined(__GNUC__) || defined(__clang__)
+		return __builtin_popcount(x);
+
+	#else
+		int count = 0;
+		for (int i = 0; i < SIZE; i++){
+			if (x & (1 << i)) count++;
+		}
+		return count;
+	#endif
 }
 
 // Function has the ability to reduce domain, and cause forced assignments and propagate
@@ -27,7 +50,7 @@ int reduce_domain(struct SudokuState* sudokuState, int index, int num){
 
 	// forced assignment
 	if ((domain & (domain-1)) == 0){
-		int forcedNum = bit_scan(domain,SIZE) + 1;
+		int forcedNum = bit_scan(domain) + 1;
 
 		if (!assign_cell(sudokuState,index,forcedNum)) return 0;
 
@@ -85,12 +108,7 @@ int most_constrained(struct SudokuState* sudokuState){
 	for (int i = 0; i < CELLS; i++){
 		if (sudokuState->grid[i] != 0) continue;
 
-		int count = 0;
-		uint32_t domain = sudokuState->domain[i];
-
-		for (int j = 0; j < SIZE; j++){
-			if (domain & (1 << j)) count++;
-		}
+		int count = bit_count(sudokuState->domain[i]);
 
 		if (count < min_count){
 			best_index = i;
