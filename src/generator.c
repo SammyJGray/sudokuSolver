@@ -83,7 +83,6 @@ int generate_sudoku(struct SudokuState* sudokuState, int nRemove){
 		row[i] = i+1;
 	}
 
-	row[5] = 2;
 	shuffle_array(row,SIZE);
 	insert_first_row(sudokuState,row);
 	
