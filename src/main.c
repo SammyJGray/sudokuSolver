@@ -16,8 +16,14 @@ int main(void) {
 	srand(seed);
 
 	init_sudoku(&sudokuState);
-	generate_sudoku(&sudokuState,50);
+	
+	if(!generate_sudoku(&sudokuState,50)){
+		printf("Generation Failed\n");
+		return 0;
+	}
+	
 	print_grid(sudokuState.grid);
+
 
 	solve(&sudokuState);
 	print_grid(sudokuState.grid);

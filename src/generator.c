@@ -77,16 +77,20 @@ static void remove_values(struct SudokuState* sudokuState, int num){
 
 
 // Does not guarantee uniqueness or all possible puzzle states
-void generate_sudoku(struct SudokuState* sudokuState, int nRemove){
+int generate_sudoku(struct SudokuState* sudokuState, int nRemove){
 	int row[SIZE];
 	for (int i = 0; i < SIZE; i++){
 		row[i] = i+1;
 	}
+
+	row[5] = 2;
 	shuffle_array(row,SIZE);
 	insert_first_row(sudokuState,row);
 	
-	solve(sudokuState);
+	if (!solve(sudokuState)) return 0;
 
 	reset_domain(sudokuState);
 	remove_values(sudokuState,nRemove);
+
+	return 1;
 }

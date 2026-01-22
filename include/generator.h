@@ -5,6 +5,6 @@
 
 void init_sudoku(struct SudokuState* sudokuState);
 
-void generate_sudoku(struct SudokuState* sudokuState, int nRemove);
+int generate_sudoku(struct SudokuState* sudokuState, int nRemove);
 
 #endif

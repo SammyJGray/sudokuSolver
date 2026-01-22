@@ -253,8 +253,8 @@ static int guess(struct SudokuState* sudokuState){
  */
 int solve(struct SudokuState* sudokuState){
 	for (int i = 0; i < CELLS; i++){
-		if (sudokuState->grid[i] != 0){
-			if (!propagate(sudokuState,i)) return 0;
+		if (sudokuState->grid[i] != 0){ 
+			if (!assign_cell(sudokuState,i,sudokuState->grid[i]) || !propagate(sudokuState,i)) return 0;
 		}
 	}
 
