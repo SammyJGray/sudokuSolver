@@ -1,16 +1,7 @@
 #include <stdio.h>
-#include <stdlib.h>
 
 #include "../include/utils.h"
 #include "../include/sudoku.h"
-
-void clear_screen(){
-	#ifdef _WIN32
-		system("cls");
-	#else
-		system("clear");
-	#endif
-}
 
 void print_grid(int* grid){
 	for (int i = 0; i < SIZE; i++){

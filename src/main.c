@@ -20,8 +20,10 @@ int main(void) {
 	generate_sudoku(&sudokuState,50);
 	print_grid(sudokuState.grid);
 
-	printf("%d\n\n",solve(&sudokuState));
+	solve(&sudokuState);
 	print_grid(sudokuState.grid);
+
+
 	return 0;
 }
 
