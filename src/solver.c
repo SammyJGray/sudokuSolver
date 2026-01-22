@@ -14,6 +14,7 @@ int bit_scan(uint32_t mask, int n){
 	return -1;
 }
 
+// Function has the ability to reduce domain, and cause forced assignments and propagate
 int reduce_domain(struct SudokuState* sudokuState, int index, int num){
 	uint32_t mask = FULL_MASK & ~(1 << (num-1));	
 
@@ -102,6 +103,7 @@ int most_constrained(struct SudokuState* sudokuState){
 	return best_index;
 }
 
+// Function assumes constraints will be propagted later
 int assign_cell(struct SudokuState* sudokuState, int index, int num){
 
 	// Check Domain
@@ -171,7 +173,9 @@ int guess(struct SudokuState* sudokuState){
 
 int solve(struct SudokuState* sudokuState){
 	for (int i = 0; i < CELLS; i++){
-		if (sudokuState->grid[i] != 0) propagate(sudokuState,i);
+		if (sudokuState->grid[i] != 0){
+			if (!propagate(sudokuState,i)) return 0;
+		}
 	}
 
 	return guess(sudokuState);
