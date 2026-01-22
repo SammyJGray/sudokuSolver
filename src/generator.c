@@ -2,6 +2,11 @@
 #include "../include/generator.h"
 #include "../include/solver.h"
 
+///
+/// Utilities
+///
+
+
 static void shuffle_array(int* arr, int size){
 	if (size > 1){
 		int j,temp;
@@ -14,7 +19,13 @@ static void shuffle_array(int* arr, int size){
 	}
 }
 
-static void insert_row(struct SudokuState* sudokuState,int* arr){
+
+///
+/// Grid Inititalization
+///
+
+
+static void insert_first_row(struct SudokuState* sudokuState,int* arr){
 	for (int i = 0; i < SIZE; i++){
 		sudokuState->grid[i] = arr[i];
 	}
@@ -26,22 +37,6 @@ static void reset_domain(struct SudokuState* sudokuState){
 	}
 }
 
-static void remove_values(struct SudokuState* sudokuState,int size, int num){
-	int indicies[num]; int isUnique; int randIndex;
-	for (int i = 0; i < num; i++){
-		isUnique = 0;
-		while (!isUnique){
-			randIndex = (rand()) % size;
-			for (int j = 0; j < i; j++){
-				if (indicies[j] == randIndex) break;
-			}
-			isUnique = 1;
-		}
-		indicies[i] = randIndex;
-		sudokuState->grid[randIndex] = 0;
-	}
-}
-
 void init_sudoku(struct SudokuState* sudokuState){
 	for (int i = 0; i < CELLS; i++){
 		sudokuState->grid[i] = 0;
@@ -49,16 +44,47 @@ void init_sudoku(struct SudokuState* sudokuState){
 	}
 }
 
+
+///
+/// Puzzle Mutation
+///
+
+
+static void remove_values(struct SudokuState* sudokuState, int num){
+	int indicies[num]; int isUnique; int randIndex;
+	for (int i = 0; i < num; i++){
+		isUnique = 0;
+		while (!isUnique){
+			randIndex = (rand()) % CELLS;
+			isUnique = 1;
+			for (int j = 0; j < i; j++){
+				if (indicies[j] == randIndex){
+					isUnique = 0;
+					break;
+				}
+			}
+		}
+		indicies[i] = randIndex;
+		sudokuState->grid[randIndex] = 0;
+	}
+}
+
+
+///
+/// Puzzle Generation
+///
+
+// Does not guarantee uniqueness or all possible puzzle states
 void generate_sudoku(struct SudokuState* sudokuState, int nRemove){
 	int row[SIZE];
 	for (int i = 0; i < SIZE; i++){
 		row[i] = i+1;
 	}
 	shuffle_array(row,SIZE);
-	insert_row(sudokuState,row);
+	insert_first_row(sudokuState,row);
 	
 	solve(sudokuState);
 
 	reset_domain(sudokuState);
-	remove_values(sudokuState,CELLS,nRemove);
+	remove_values(sudokuState,nRemove);
 }

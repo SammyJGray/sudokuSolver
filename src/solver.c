@@ -22,9 +22,9 @@ static int reduce_domain(struct SudokuState*, int, int);
 static int guess(struct SudokuState*);
 
 
-// 
-// Bit Operations
-//
+/// 
+/// Bit Operations
+///
 
 
 static int bit_scan(uint32_t x){
@@ -58,9 +58,9 @@ static int bit_count(uint32_t x){
 }
 
 
-//
-// Peer Iteration
-//
+///
+/// Peer Iteration
+///
 
 
 static int for_each_peer(struct SudokuState* sudokuState, int index, int value, peer_fn fn){
@@ -89,9 +89,9 @@ static int for_each_peer(struct SudokuState* sudokuState, int index, int value, 
 }
 
 
-//
-// Constraint Propagation
-//
+///
+/// Constraint Propagation
+///
 
 
 // Function has the ability to reduce domain, and cause forced assignments and propagate
@@ -130,9 +130,9 @@ static int propagate(struct SudokuState* sudokuState, int index){
 }
 
 
-//
-// Search and Assignment
-//
+///
+/// Search and Assignment
+///
 
 
 // Returns 0 on peer conflict
@@ -203,9 +203,9 @@ static int guess(struct SudokuState* sudokuState){
 }
 
 
-//
-// Entry Point
-//
+///
+/// Entry Point
+///
 
 
 int solve(struct SudokuState* sudokuState){
