@@ -2,9 +2,10 @@
 #include "../include/generator.h"
 #include "../include/solver.h"
 
-///
+
+/// ---------------------------------------------------------------
 /// Utilities
-///
+/// ---------------------------------------------------------------
 
 
 static void shuffle_array(int* arr, int size){
@@ -20,9 +21,9 @@ static void shuffle_array(int* arr, int size){
 }
 
 
-///
+/// ---------------------------------------------------------------
 /// Grid Inititalization
-///
+/// ---------------------------------------------------------------
 
 
 static void insert_first_row(struct SudokuState* sudokuState,int* arr){
@@ -45,9 +46,9 @@ void init_sudoku(struct SudokuState* sudokuState){
 }
 
 
-///
+/// ---------------------------------------------------------------
 /// Puzzle Mutation
-///
+/// ---------------------------------------------------------------
 
 
 static void remove_values(struct SudokuState* sudokuState, int num){
@@ -70,9 +71,10 @@ static void remove_values(struct SudokuState* sudokuState, int num){
 }
 
 
-///
+/// ---------------------------------------------------------------
 /// Puzzle Generation
-///
+/// ---------------------------------------------------------------
+
 
 // Does not guarantee uniqueness or all possible puzzle states
 void generate_sudoku(struct SudokuState* sudokuState, int nRemove){

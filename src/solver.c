@@ -2,33 +2,37 @@
 #include <stdint.h>
 #include "../include/sudoku.h"
 
-//
-// Type Definitions
-//
+/// ---------------------------------------------------------------
+/// Type Definitions
+/// ---------------------------------------------------------------
 
 
 typedef int (*peer_fn)(struct SudokuState* sudokuState, int peerIndex, int value);
 
 
-//
-// Declarations
-//
+/// ---------------------------------------------------------------
+/// Declarations
+/// ---------------------------------------------------------------
+
 
 
 static int for_each_peer(struct SudokuState*, int, int, peer_fn);
 static int assign_cell(struct SudokuState*, int, int);
 static int propagate(struct SudokuState*, int);
-static int reduce_domain(struct SudokuState*, int, int);
 static int guess(struct SudokuState*);
 
 
-/// 
+/// ---------------------------------------------------------------
 /// Bit Operations
-///
+/// ---------------------------------------------------------------
 
-
+/**
+ * bit_scan
+ *
+ * Returns the index of the least significant set bit
+ * If x is 0, returns -1
+ */
 static int bit_scan(uint32_t x){
-
 	if (x == 0) return -1;
 
 	#if defined(__GNUC__) || defined(__clang__)
@@ -43,8 +47,12 @@ static int bit_scan(uint32_t x){
 	#endif
 }
 
+/**
+ * bit_count
+ *
+ * Returns the number of set bits in x
+ */
 static int bit_count(uint32_t x){
-
 	#if defined(__GNUC__) || defined(__clang__)
 		return __builtin_popcount(x);
 
@@ -58,11 +66,17 @@ static int bit_count(uint32_t x){
 }
 
 
-///
+/// ---------------------------------------------------------------
 /// Peer Iteration
-///
+/// ---------------------------------------------------------------
 
-
+/**
+ * for_each_peer
+ *
+ * Calls the given function for each for every peer of a cell
+ * A peer is any cell in the same row, collumn or box
+ * Returns 1 if all calls succeed, 0 if any call returns 0
+ */
 static int for_each_peer(struct SudokuState* sudokuState, int index, int value, peer_fn fn){
 	int row = index / SIZE;
 	for (int x = 0; x < SIZE; x++){
@@ -89,39 +103,44 @@ static int for_each_peer(struct SudokuState* sudokuState, int index, int value, 
 }
 
 
-///
+/// ---------------------------------------------------------------
 /// Constraint Propagation
-///
+/// ---------------------------------------------------------------
 
+/**
+ * propagate_peer
+ *
+ * Reduces a peer's domain and may trigger forced assignments
+ * A forced assignment can result in a call to assign_digit and propagate
+ * Returns 0 if a contradiction appears, otherwise 1
+ */
+static int propagate_peer(struct SudokuState* sudokuState, int peerIndex, int value){
+	if (sudokuState->grid[peerIndex] != 0) return 1;
 
-// Function has the ability to reduce domain, and cause forced assignments and propagate
-static int reduce_domain(struct SudokuState* sudokuState, int index, int num){
-	uint32_t mask = FULL_MASK & ~(1 << (num-1));	
+	uint32_t mask = FULL_MASK & ~(1 << (value-1));
 
-	// update domain
-	sudokuState->domain[index] &= mask;	
-	uint32_t domain = sudokuState->domain[index];
+	sudokuState->domain[peerIndex] &= mask;
+	uint32_t domain = sudokuState->domain[peerIndex];
 
-	// validate
 	if (domain == 0) return 0;
 
-	// forced assignment
 	if ((domain & (domain-1)) == 0){
-		int forcedNum = bit_scan(domain) + 1;
+		int forcedValue = bit_scan(domain) + 1;
 
-		if (!assign_cell(sudokuState,index,forcedNum)) return 0;
+		if (!assign_cell(sudokuState,peerIndex,forcedValue)) return 0;
 
-		if (!propagate(sudokuState,index)) return 0;
+		if (!propagate(sudokuState,peerIndex)) return 0;
 	}
 
 	return 1;
 }
 
-static int propagate_peer(struct SudokuState* sudokuState, int peerIndex, int value){
-	if (sudokuState->grid[peerIndex] != 0) return 1;
-	return reduce_domain(sudokuState,peerIndex,value);
-}
-
+/**
+* propagate
+*
+* Applies constraint propagation to all of a cells peers
+* Returns 0 if any contradiction appears, otherwise 1
+*/
 static int propagate(struct SudokuState* sudokuState, int index){
 	int num = sudokuState->grid[index];
 	if (num == 0) return 1;
@@ -130,20 +149,27 @@ static int propagate(struct SudokuState* sudokuState, int index){
 }
 
 
-///
+/// ---------------------------------------------------------------
 /// Search and Assignment
-///
+/// ---------------------------------------------------------------
 
 
-// Returns 0 on peer conflict
+/**
+* peer_conflict
+*
+* Returns 0 if a peer contains the same value, otherwise 1
+*/
 static int peer_conflict(struct SudokuState* sudokuState,int peerIndex, int value){
 	return (sudokuState->grid[peerIndex] != value);
 }
 
-// Function assumes constraints will be propagted later
+/**
+* assign_cell
+*
+* Assigns value to a cell after checking it's domain and constraints from peers
+* Returns 1 if assignment occurs
+*/
 static int assign_cell(struct SudokuState* sudokuState, int index, int num){
-
-	// Check Domain
 	uint32_t mask = 1 << (num-1);
 	if ((sudokuState->domain[index] & mask) == 0) return 0;
 
@@ -155,6 +181,12 @@ static int assign_cell(struct SudokuState* sudokuState, int index, int num){
 	return 1;
 }
 
+/**
+* most_constrained
+*
+* Finds an empty cell with the smallest domain size
+* Returns -1 if grid is filled
+*/
 static int most_constrained(struct SudokuState* sudokuState){
 	int best_index = -1;
 	int min_count = SIZE+1;
@@ -175,6 +207,12 @@ static int most_constrained(struct SudokuState* sudokuState){
 	return best_index;
 }
 
+/**
+* guess
+*
+* Recursive backtracking search
+* Returns 1 on sucess, 0 on failure
+*/
 static int guess(struct SudokuState* sudokuState){
 	int index = most_constrained(sudokuState);
 
@@ -203,11 +241,16 @@ static int guess(struct SudokuState* sudokuState){
 }
 
 
-///
+/// ---------------------------------------------------------------
 /// Entry Point
-///
+/// ---------------------------------------------------------------
 
-
+/**
+ * solve
+ *
+ * Solves a sudoku using constraint propagation + backtracking
+ * Returns 1 if solved, 0 if unsolvable
+ */
 int solve(struct SudokuState* sudokuState){
 	for (int i = 0; i < CELLS; i++){
 		if (sudokuState->grid[i] != 0){
