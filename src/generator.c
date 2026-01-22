@@ -1,5 +1,4 @@
 #include <stdlib.h>
-
 #include "../include/generator.h"
 #include "../include/solver.h"
 

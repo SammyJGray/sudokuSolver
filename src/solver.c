@@ -1,11 +1,31 @@
 #include <string.h>
 #include <stdint.h>
-
 #include "../include/sudoku.h"
 
-static int propagate(struct SudokuState* sudokuState, int index);
+//
+// Type Definitions
+//
 
-static int assign_cell(struct SudokuState* sudokuState, int index, int num);
+
+typedef int (*peer_fn)(struct SudokuState* sudokuState, int peerIndex, int value);
+
+
+//
+// Declarations
+//
+
+
+static int for_each_peer(struct SudokuState*, int, int, peer_fn);
+static int assign_cell(struct SudokuState*, int, int);
+static int propagate(struct SudokuState*, int);
+static int reduce_domain(struct SudokuState*, int, int);
+static int guess(struct SudokuState*);
+
+
+// 
+// Bit Operations
+//
+
 
 static int bit_scan(uint32_t x){
 
@@ -37,30 +57,11 @@ static int bit_count(uint32_t x){
 	#endif
 }
 
-// Function has the ability to reduce domain, and cause forced assignments and propagate
-static int reduce_domain(struct SudokuState* sudokuState, int index, int num){
-	uint32_t mask = FULL_MASK & ~(1 << (num-1));	
 
-	// update domain
-	sudokuState->domain[index] &= mask;	
-	uint32_t domain = sudokuState->domain[index];
+//
+// Peer Iteration
+//
 
-	// validate
-	if (domain == 0) return 0;
-
-	// forced assignment
-	if ((domain & (domain-1)) == 0){
-		int forcedNum = bit_scan(domain) + 1;
-
-		if (!assign_cell(sudokuState,index,forcedNum)) return 0;
-
-		if (!propagate(sudokuState,index)) return 0;
-	}
-
-	return 1;
-}
-
-typedef int (*peer_fn)(struct SudokuState* sudokuState, int peerIndex, int value);
 
 static int for_each_peer(struct SudokuState* sudokuState, int index, int value, peer_fn fn){
 	int row = index / SIZE;
@@ -87,6 +88,35 @@ static int for_each_peer(struct SudokuState* sudokuState, int index, int value, 
 	return 1;
 }
 
+
+//
+// Constraint Propagation
+//
+
+
+// Function has the ability to reduce domain, and cause forced assignments and propagate
+static int reduce_domain(struct SudokuState* sudokuState, int index, int num){
+	uint32_t mask = FULL_MASK & ~(1 << (num-1));	
+
+	// update domain
+	sudokuState->domain[index] &= mask;	
+	uint32_t domain = sudokuState->domain[index];
+
+	// validate
+	if (domain == 0) return 0;
+
+	// forced assignment
+	if ((domain & (domain-1)) == 0){
+		int forcedNum = bit_scan(domain) + 1;
+
+		if (!assign_cell(sudokuState,index,forcedNum)) return 0;
+
+		if (!propagate(sudokuState,index)) return 0;
+	}
+
+	return 1;
+}
+
 static int propagate_peer(struct SudokuState* sudokuState, int peerIndex, int value){
 	if (sudokuState->grid[peerIndex] != 0) return 1;
 	return reduce_domain(sudokuState,peerIndex,value);
@@ -98,6 +128,12 @@ static int propagate(struct SudokuState* sudokuState, int index){
 
 	return for_each_peer(sudokuState,index,num,propagate_peer);	
 }
+
+
+//
+// Search and Assignment
+//
+
 
 // Returns 0 on peer conflict
 static int peer_conflict(struct SudokuState* sudokuState,int peerIndex, int value){
@@ -118,7 +154,6 @@ static int assign_cell(struct SudokuState* sudokuState, int index, int num){
 
 	return 1;
 }
-
 
 static int most_constrained(struct SudokuState* sudokuState){
 	int best_index = -1;
@@ -167,6 +202,12 @@ static int guess(struct SudokuState* sudokuState){
 	return 0;
 }
 
+
+//
+// Entry Point
+//
+
+
 int solve(struct SudokuState* sudokuState){
 	for (int i = 0; i < CELLS; i++){
 		if (sudokuState->grid[i] != 0){
@@ -176,4 +217,3 @@ int solve(struct SudokuState* sudokuState){
 
 	return guess(sudokuState);
 }
-
